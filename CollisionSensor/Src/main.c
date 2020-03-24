@@ -47,7 +47,7 @@ int main(void)
 	RCC->AHBENR |= RCC_AHBENR_GPIOBEN;	// Enable GPIOB clock
 	RCC->APB1ENR |= RCC_APB1ENR_TIM3EN; // Enable TIM 3 clock
 	
-	// Configure LEDs
+	// Configure pins
 	configGPIOB_AF1(MOTOR1_B);
 	
 	uint32_t arr = 10000;
@@ -80,8 +80,8 @@ int main(void)
 }
 
 /*
- * Configure GPIOA pin
- * Pass in the pin number, x, of the pin on PAx
+ * Configure GPIOB pin
+ * Pass in the pin number, x, of the pin on PBx
  * Configures pin to alternate function mode, push-pull output,
  * low-speed, no pull-up/down resistors, and AF1
  */
@@ -101,8 +101,8 @@ void configGPIOB_AF1(uint8_t x) {
 }
 
 /*
- * Generic LED configuration function
- * Pass in the pin number, x, of the LED on PCx
+ * Configure GPIOC pin
+ * Pass in the pin number, x, of the pin on PCx
  * Configures pin to alternate function mode, push-pull output,
  * low-speed, no pull-up/down resistors, and AF0
  */
