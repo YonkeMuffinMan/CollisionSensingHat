@@ -390,9 +390,6 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>::CMSIS</GroupName>
-        </Group>
-        <Group>
           <GroupName>Application/User</GroupName>
           <Files>
             <File>
@@ -409,6 +406,21 @@
               <FileName>stm32f0xx_hal_msp.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Src/stm32f0xx_hal_msp.c</FilePath>
+            </File>
+            <File>
+              <FileName>motor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\motor.c</FilePath>
+            </File>
+            <File>
+              <FileName>ultrasonicSensorUart.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>../Src/ultrasonicSensorUart.h</FilePath>
+            </File>
+            <File>
+              <FileName>ultrasonicSensorUart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Src/ultrasonicSensorUart.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -501,6 +513,9 @@
               <FilePath>../Src/system_stm32f0xx.c</FilePath>
             </File>
           </Files>
+        </Group>
+        <Group>
+          <GroupName>::CMSIS</GroupName>
         </Group>
       </Groups>
     </Target>

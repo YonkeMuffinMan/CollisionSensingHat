@@ -1,3 +1,6 @@
+#ifndef __MOTOR_H
+#define __MOTOR_H
+
 #include "stm32f0xx_hal.h"
 
 typedef struct motor {
@@ -11,3 +14,5 @@ void startMotor(void);
 void configGPIOB_AF1(uint8_t x);
 
 void setDutyCycle(float prcnt);
+
+#endif /* __MOTOR_H */
