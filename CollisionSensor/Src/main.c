@@ -21,6 +21,27 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "motor.h"
+#include "ultrasonicSensorUart.h"
+
+/*
+ * USART3 Pins:
+ *	TX: PC4, PB10, PC10
+ *	RX: PC5, PB11, PC11
+ *	CHOSEN: TX PB10, RX PB11
+ *	        AF4      AF4    
+ */
+#define TX_B 10
+#define RX_B 11
+
+// Motor Pins
+#define MOTOR1_B 4 // PB4, TIM3 channel 1
+
+// Distance thresholds for LEDs in milimeteres
+#define RED_LED_THRESHOLD 0
+#define ORANGE_LED_THRESHOLD 300 // 1 feet
+#define BLUE_LED_THRESHOLD 950 // 3 feet
+#define GREEN_LED_THRESHOLD 1900 // 6 feet
+#define NO_LED_THRESHOLD 3500 // 12 feet
 
 // LED Pins on GPIOC
 #define RED_LED 6
@@ -28,13 +49,14 @@
 #define ORANGE_LED 8
 #define GREEN_LED 9
 
-// Motor Pins
-#define MOTOR1_B 4 // PB4, TIM3 channel 1
-
-
 void SystemClock_Config(void);
-void configGPIOB_AF1(uint8_t x);
+
 void configGPIOC_AF0(uint8_t x);
+void configGPIOC_output(uint8_t pin);
+
+void setWarnings(void);
+void setLEDs(uint16_t distance);
+void setVibrationIntensity(uint16_t distance);
 
 /**
   * @brief  The application entry point.
@@ -45,45 +67,91 @@ int main(void)
   HAL_Init();
   SystemClock_Config();
 	
+	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;	// Enable GPIOC clock
+	
+	// initialize LEDs
+	configGPIOC_output(RED_LED);
+	configGPIOC_output(GREEN_LED);
+	configGPIOC_output(BLUE_LED);
+	configGPIOC_output(ORANGE_LED);
+	
 	// Set up motor on GPIOB and TIM3
 	// pin_number, pwm_prescalar, pwm_arr
-	MOTOR motor = {MOTOR1_B, 0, 10000};
+	MOTOR motor = { MOTOR1_B, 0, 10000 };
 	setupMotor(motor);
 	startMotor();
+	
+	// uart_tx, uart_rx, uart_baud_rate
+	SENSOR sensor = { TX_B, RX_B, 9600 };
+	setupSensor(sensor);
 
   while (1)
   {
-		HAL_Delay(2000);
-		setDutyCycle(0);
-		HAL_Delay(2000);
-		setDutyCycle(0.25);
-		HAL_Delay(2000);
-		setDutyCycle(0.50);
-		HAL_Delay(2000);
-		setDutyCycle(0.75);
-		HAL_Delay(2000);
-		setDutyCycle(1);
+		HAL_Delay(100);
+		getReading();
+		setWarnings();
   }
 }
 
 /*
- * Configure GPIOC pin
- * Pass in the pin number, x, of the pin on PCx
- * Configures pin to alternate function mode, push-pull output,
- * low-speed, no pull-up/down resistors, and AF0
+ * Generic GPIOC configuration function
+ * Pass in the pin number, x, of the GPIO on PCx
+ * Configures pin to general-pupose output mode, push-pull output,
+ * low-speed, and no pull-up/down resistors
  */
-void configGPIOC_AF0(uint8_t x) {
-	// Set to Alternate function mode
-	GPIOC->MODER &= ~(1 << (2*x));
-	GPIOC->MODER |= (1 << ((2*x)+1));
+void configGPIOC_output(uint8_t pin) {
+	uint32_t shift2x = 2*pin;
+	uint32_t shift2xp1 = shift2x+1;
+	
+	// Set General Pupose Output
+	GPIOC->MODER |= (1 << shift2x);
+	GPIOC->MODER &= ~(1 << shift2xp1);
 	// Set to Push-pull
-	GPIOC->OTYPER &= ~(1 << x);
+	GPIOC->OTYPER &= ~(1 << pin);
 	// Set to Low speed
-	GPIOC->OSPEEDR &= ~((1 << (2*x)) | (1 << ((2*x)+1)));
+	GPIOC->OSPEEDR &= ~((1 << shift2x) | (1 << shift2xp1));
 	// Set to no pull-up/down
-	GPIOC->PUPDR &= ~((1 << (2*x)) | (1 << ((2*x)+1)));
-	// Set alternate functon to AF0, TIM3_CH
-	GPIOC->AFR[0] &= ~(0xF << (4*x));
+	GPIOC->PUPDR &= ~((1 << shift2x) | (1 << shift2xp1));
+}
+
+void setWarnings() {
+	while (newValue == 0);
+	
+	uint16_t distance = distanceValue; // in millimeters	
+	setLEDs(distance);
+	setVibrationIntensity(distance);
+}
+
+void setLEDs(uint16_t distance) {
+	// turn on LEDs
+	GPIOC->BSRR = (((distance >= GREEN_LED_THRESHOLD) & (distance < NO_LED_THRESHOLD)) << GREEN_LED) |
+									(((distance >= BLUE_LED_THRESHOLD) & (distance < GREEN_LED_THRESHOLD)) << BLUE_LED) |
+									(((distance >= ORANGE_LED_THRESHOLD) & (distance < BLUE_LED_THRESHOLD)) << ORANGE_LED) |
+									(((distance >= RED_LED_THRESHOLD) & (distance < ORANGE_LED_THRESHOLD)) << RED_LED);
+		// turn off LEDs
+	GPIOC->BRR = (((distance < GREEN_LED_THRESHOLD) | (distance > NO_LED_THRESHOLD) << GREEN_LED) |
+								 ((distance < BLUE_LED_THRESHOLD) | (distance > GREEN_LED_THRESHOLD)) << BLUE_LED) |
+								 (((distance < ORANGE_LED_THRESHOLD) | (distance > BLUE_LED_THRESHOLD)) << ORANGE_LED) |
+								 ((distance > ORANGE_LED_THRESHOLD) << RED_LED);
+}
+
+void setVibrationIntensity(uint16_t distance) {
+	uint8_t motorSpeed = ((distance < ORANGE_LED_THRESHOLD) << 3) |
+											 ((distance < BLUE_LED_THRESHOLD) << 2) |
+											 ((distance < GREEN_LED_THRESHOLD) << 1) |
+											 ((distance < NO_LED_THRESHOLD));
+	
+	switch (motorSpeed) {
+		case 0xF:
+			setDutyCycle(1); break;
+		case 0x7:
+			setDutyCycle(0.75); break;
+		case 0x3:
+			setDutyCycle(0.50); break;
+		case 0x1:
+		default:
+			setDutyCycle(0);
+	}
 }
 
 
