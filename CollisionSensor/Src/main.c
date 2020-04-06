@@ -76,13 +76,11 @@ int main(void)
 	configGPIOC_output(ORANGE_LED);
 	
 	// Set up motor on GPIOB and TIM3
-	// pin_number, pwm_prescalar, pwm_arr
-	MOTOR motor = { MOTOR1_B, 0, 10000 };
+	MOTOR motor = { MOTOR1_B, 0, 10000 }; // pin_number, pwm_prescalar, pwm_arr
 	setupMotor(motor);
 	startMotor();
 	
-	// uart_tx, uart_rx, uart_baud_rate
-	SENSOR sensor = { TX_B, RX_B, 9600 };
+	SENSOR sensor = { TX_B, RX_B, 9600 }; // uart_tx, uart_rx, uart_baud_rate
 	setupSensor(sensor);
 
   while (1)
@@ -129,10 +127,10 @@ void setLEDs(uint16_t distance) {
 									(((distance >= ORANGE_LED_THRESHOLD) & (distance < BLUE_LED_THRESHOLD)) << ORANGE_LED) |
 									(((distance >= RED_LED_THRESHOLD) & (distance < ORANGE_LED_THRESHOLD)) << RED_LED);
 		// turn off LEDs
-	GPIOC->BRR = (((distance < GREEN_LED_THRESHOLD) | (distance > NO_LED_THRESHOLD) << GREEN_LED) |
-								 ((distance < BLUE_LED_THRESHOLD) | (distance > GREEN_LED_THRESHOLD)) << BLUE_LED) |
-								 (((distance < ORANGE_LED_THRESHOLD) | (distance > BLUE_LED_THRESHOLD)) << ORANGE_LED) |
-								 ((distance > ORANGE_LED_THRESHOLD) << RED_LED);
+	GPIOC->BRR = (((distance < GREEN_LED_THRESHOLD) | (distance >= NO_LED_THRESHOLD)) << GREEN_LED) |
+								 (((distance < BLUE_LED_THRESHOLD) | (distance >= GREEN_LED_THRESHOLD)) << BLUE_LED) |
+								 (((distance < ORANGE_LED_THRESHOLD) | (distance >= BLUE_LED_THRESHOLD)) << ORANGE_LED) |
+								 ((distance >= ORANGE_LED_THRESHOLD) << RED_LED);
 }
 
 void setVibrationIntensity(uint16_t distance) {
@@ -145,9 +143,9 @@ void setVibrationIntensity(uint16_t distance) {
 		case 0xF:
 			setDutyCycle(1); break;
 		case 0x7:
-			setDutyCycle(0.75); break;
+			setDutyCycle(0.66); break;
 		case 0x3:
-			setDutyCycle(0.50); break;
+			setDutyCycle(0.33); break;
 		case 0x1:
 		default:
 			setDutyCycle(0);
