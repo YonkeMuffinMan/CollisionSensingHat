@@ -22,16 +22,24 @@
 #include "main.h"
 #include "motor.h"
 #include "ultrasonicSensorUart.h"
+#include "lcd.h"
 
 /*
  * USART3 Pins:
- *	TX: PC4, PB10, PC10
- *	RX: PC5, PB11, PC11
- *	CHOSEN: TX PB10, RX PB11
- *	        AF4      AF4    
+ *  TX: PC4, PB10, PC10
+ *  RX: PC5, PB11, PC11
+ *  CHOSEN: TX PB10, RX PB11
+ *          AF4      AF4    
  */
 #define TX_B 10
 #define RX_B 11
+
+// SPI Pins for LCD
+#define SCK_B 13	// system clock
+#define MOSI_B 15 // send data
+#define DC_B 5		// mode select
+#define RST_B 6		// reset
+#define SCE_B 12		// chip select
 
 // Motor Pins
 #define MOTOR1_B 4 // PB4, TIM3 channel 1
@@ -51,12 +59,11 @@
 
 void SystemClock_Config(void);
 
-void configGPIOC_AF0(uint8_t x);
 void configGPIOC_output(uint8_t pin);
+void timerSetup(void);
 
 void setWarnings(void);
 void setLEDs(uint16_t distance);
-void setVibrationIntensity(uint16_t distance);
 
 /**
   * @brief  The application entry point.
@@ -66,29 +73,97 @@ int main(void)
 {
   HAL_Init();
   SystemClock_Config();
+  
+  RCC->AHBENR |= RCC_AHBENR_GPIOCEN;  // Enable GPIOC clock
+	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN; // Enable TIM2 clock
+  
+  // initialize LEDs
+  configGPIOC_output(RED_LED);
+  configGPIOC_output(GREEN_LED);
+  configGPIOC_output(BLUE_LED);
+  configGPIOC_output(ORANGE_LED);
+  
+  // Set up motor on GPIOB and TIM3
+  MOTOR motor = { MOTOR1_B, 0, 10000, {ORANGE_LED_THRESHOLD, BLUE_LED_THRESHOLD, GREEN_LED_THRESHOLD, NO_LED_THRESHOLD} }; // pin_number, pwm_prescalar, pwm_arr, thresholds (high to low)
+  MOTOR_Setup(motor);
+  MOTOR_Start();
+  
+	// Set up UART Ultrasonic Distance sensor
+  SENSOR sensor = { TX_B, RX_B, 9600 }; // uart_tx, uart_rx, uart_baud_rate
+  SENSOR_Setup(sensor);
 	
-	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;	// Enable GPIOC clock
+	// Set up LCD screen
+	LCD screen = { SCK_B, MOSI_B, SCE_B, DC_B, RST_B };
+	LCD_Setup(screen);
+	LCD_DistanceSetup();
 	
-	// initialize LEDs
-	configGPIOC_output(RED_LED);
-	configGPIOC_output(GREEN_LED);
-	configGPIOC_output(BLUE_LED);
-	configGPIOC_output(ORANGE_LED);
+	// setup and start the 100ms timer
+	timerSetup();
 	
-	// Set up motor on GPIOB and TIM3
-	MOTOR motor = { MOTOR1_B, 0, 10000 }; // pin_number, pwm_prescalar, pwm_arr
-	setupMotor(motor);
-	startMotor();
-	
-	SENSOR sensor = { TX_B, RX_B, 9600 }; // uart_tx, uart_rx, uart_baud_rate
-	setupSensor(sensor);
-
   while (1)
   {
-		HAL_Delay(100);
-		getReading();
-		setWarnings();
+		
   }
+}
+
+/*
+ * Setup the 100ms timer to get readings and set the proper warnings
+ */
+void timerSetup() {
+	// Configure TIM2 to trigger UEV at 10 Hz, every 100 ms
+	TIM2->PSC = (8000-1);	// 1kHz timer clock -> 1ms counter
+	TIM2->ARR = 100;
+	
+	// Configure TIM2 to interrupt on UEV
+	TIM2->CR1 &= ~(1 << 1);	// UDIS bit to 0 means UEV enabled
+	TIM2->DIER |= 1;	// Update interrupt enabled
+	
+	// Enable/start TIM2
+	TIM2->CR1 &= ~(1 << 4);	// upcounter
+	TIM2->CR1 |= 1;	// Counter enabled
+	
+	// Configure TIM2 interrupt handler and enable in NVIC
+	// Set its priority lower than the Ultrasonic Distance UART's
+	NVIC_EnableIRQ(TIM2_IRQn);
+	NVIC_SetPriority(TIM2_IRQn, 3);
+}
+
+/*
+ * TIM2 Interrupt Handler: Get Ultrasonic distance readings and set the warnings
+ */
+void TIM2_IRQHandler(void) {
+	SENSOR_GetReading();
+	setWarnings();
+	
+	TIM2->SR &= ~(1);	// clear update interrupt flag
+}
+
+/*
+ * Wait for a new distance value, then set the warnings
+ */
+void setWarnings() {
+  while (sensorValues.new_value == 0);
+  
+  uint16_t distance = sensorValues.distance; // in millimeters  
+  setLEDs(distance);
+  //MOTOR_SetVibrationIntensity(distance);
+	LCD_PrintMeasurement(distance, "mm", 2);
+}
+
+/*
+ * Turn on and off the LEDs based on the distance thresholds
+ */
+void setLEDs(uint16_t distance) {
+  // turn on LEDs
+  GPIOC->BSRR = (((distance >= GREEN_LED_THRESHOLD) & (distance < NO_LED_THRESHOLD)) << GREEN_LED) |
+                  (((distance >= BLUE_LED_THRESHOLD) & (distance < GREEN_LED_THRESHOLD)) << BLUE_LED) |
+                  (((distance >= ORANGE_LED_THRESHOLD) & (distance < BLUE_LED_THRESHOLD)) << ORANGE_LED) |
+                  (((distance >= RED_LED_THRESHOLD) & (distance < ORANGE_LED_THRESHOLD)) << RED_LED);
+    // turn off LEDs
+  GPIOC->BRR = (((distance < GREEN_LED_THRESHOLD) | (distance >= NO_LED_THRESHOLD)) << GREEN_LED) |
+                 (((distance < BLUE_LED_THRESHOLD) | (distance >= GREEN_LED_THRESHOLD)) << BLUE_LED) |
+                 (((distance < ORANGE_LED_THRESHOLD) | (distance >= BLUE_LED_THRESHOLD)) << ORANGE_LED) |
+                 ((distance >= ORANGE_LED_THRESHOLD) << RED_LED);
 }
 
 /*
@@ -98,58 +173,18 @@ int main(void)
  * low-speed, and no pull-up/down resistors
  */
 void configGPIOC_output(uint8_t pin) {
-	uint32_t shift2x = 2*pin;
-	uint32_t shift2xp1 = shift2x+1;
-	
-	// Set General Pupose Output
-	GPIOC->MODER |= (1 << shift2x);
-	GPIOC->MODER &= ~(1 << shift2xp1);
-	// Set to Push-pull
-	GPIOC->OTYPER &= ~(1 << pin);
-	// Set to Low speed
-	GPIOC->OSPEEDR &= ~((1 << shift2x) | (1 << shift2xp1));
-	// Set to no pull-up/down
-	GPIOC->PUPDR &= ~((1 << shift2x) | (1 << shift2xp1));
-}
-
-void setWarnings() {
-	while (newValue == 0);
-	
-	uint16_t distance = distanceValue; // in millimeters	
-	setLEDs(distance);
-	setVibrationIntensity(distance);
-}
-
-void setLEDs(uint16_t distance) {
-	// turn on LEDs
-	GPIOC->BSRR = (((distance >= GREEN_LED_THRESHOLD) & (distance < NO_LED_THRESHOLD)) << GREEN_LED) |
-									(((distance >= BLUE_LED_THRESHOLD) & (distance < GREEN_LED_THRESHOLD)) << BLUE_LED) |
-									(((distance >= ORANGE_LED_THRESHOLD) & (distance < BLUE_LED_THRESHOLD)) << ORANGE_LED) |
-									(((distance >= RED_LED_THRESHOLD) & (distance < ORANGE_LED_THRESHOLD)) << RED_LED);
-		// turn off LEDs
-	GPIOC->BRR = (((distance < GREEN_LED_THRESHOLD) | (distance >= NO_LED_THRESHOLD)) << GREEN_LED) |
-								 (((distance < BLUE_LED_THRESHOLD) | (distance >= GREEN_LED_THRESHOLD)) << BLUE_LED) |
-								 (((distance < ORANGE_LED_THRESHOLD) | (distance >= BLUE_LED_THRESHOLD)) << ORANGE_LED) |
-								 ((distance >= ORANGE_LED_THRESHOLD) << RED_LED);
-}
-
-void setVibrationIntensity(uint16_t distance) {
-	uint8_t motorSpeed = ((distance < ORANGE_LED_THRESHOLD) << 3) |
-											 ((distance < BLUE_LED_THRESHOLD) << 2) |
-											 ((distance < GREEN_LED_THRESHOLD) << 1) |
-											 ((distance < NO_LED_THRESHOLD));
-	
-	switch (motorSpeed) {
-		case 0xF:
-			setDutyCycle(1); break;
-		case 0x7:
-			setDutyCycle(0.66); break;
-		case 0x3:
-			setDutyCycle(0.33); break;
-		case 0x1:
-		default:
-			setDutyCycle(0);
-	}
+  uint32_t shift2x = 2*pin;
+  uint32_t shift2xp1 = shift2x+1;
+  
+  // Set General Pupose Output
+  GPIOC->MODER |= (1 << shift2x);
+  GPIOC->MODER &= ~(1 << shift2xp1);
+  // Set to Push-pull
+  GPIOC->OTYPER &= ~(1 << pin);
+  // Set to Low speed
+  GPIOC->OSPEEDR &= ~((1 << shift2x) | (1 << shift2xp1));
+  // Set to no pull-up/down
+  GPIOC->PUPDR &= ~((1 << shift2x) | (1 << shift2xp1));
 }
 
 
