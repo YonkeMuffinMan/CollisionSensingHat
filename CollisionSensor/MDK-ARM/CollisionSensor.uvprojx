@@ -432,6 +432,11 @@
               <FileType>1</FileType>
               <FilePath>../Src/lcd.c</FilePath>
             </File>
+            <File>
+              <FileName>motor.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\Src\motor.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

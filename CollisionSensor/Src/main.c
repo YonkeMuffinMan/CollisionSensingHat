@@ -39,7 +39,7 @@
 #define MOSI_B 15 // send data
 #define DC_B 5		// mode select
 #define RST_B 6		// reset
-#define SCE_B 12		// chip select
+#define SCE_B 7		// chip select
 
 // Motor Pins
 #define MOTOR1_B 4 // PB4, TIM3 channel 1
