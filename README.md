@@ -2,12 +2,9 @@
 
 ## Purpose
 
----
 The Collision Sensor utilizes an ultrasonic distance sensor to measure the distance to objects in its path and warn the user when objects are getting close. The warnings come in the form of LED lights that indicate how close the object is, a vibration motor that increases motor vibration intensity as objects get closer, and an LCD screen that prints the measured distance.
 
 ## Parts List
-
----
 
 - MCU: [STM32f072BDISCOVERY](https://www.st.com/en/evaluation-tools/32f072bdiscovery.html)
 - Ultrasonic Distance Sensor: [US-100](https://www.adafruit.com/product/4019)
@@ -17,8 +14,6 @@ The Collision Sensor utilizes an ultrasonic distance sensor to measure the dista
 - Diode: [1N4001](https://www.digikey.com/product-detail/en/comchip-technology/1N4001-G/641-1310-1-ND/1979675)
 
 ## Functionality
-
----
 
 ### Overview
 
@@ -43,13 +38,13 @@ Note: Only the specified LED is on within each threshold, all other LEDs are off
 ### Printing to LCD
 
 To print the distance to the Nokia 5110 LCD screen, the distance integer is first converted to an array of characters representing each digit. These characters are then converted to arrays of hexadecimal which represent which pixels of the LCD screen to turn on and which to turn off. Each column of a row of the LCD screen is made up of 8 pixels whose status is controlled by one byte. A 1 means the pixel will be on while a 0 means it will be off. For example, an 'A' is represented by the array { 0xF8, 0x24, 0x22, 0x24, 0xF8 } and will look like:
+
 ![A LCD Example](lcd_example.png)
 
  Each character takes up 5 columns of 8 pixels. The hexadecimal arrays are sent one byte at a time to the LCD screen over SPI. More information on how to print to the LCD screen can be found in it's [datasheet](https://www.sparkfun.com/datasheets/LCD/Monochrome/Nokia5110.pdf).
 
 ## Setup Instructions
 
----
 The wiring diagram is as follows:
 ![Wiring Diagram](wiring_diagram.png)
 
