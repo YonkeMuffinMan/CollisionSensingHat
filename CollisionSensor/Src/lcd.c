@@ -240,16 +240,23 @@ void LCD_DistanceSetup() {
  */
 void LCD_PrintMeasurement(uint16_t dist, char* units, uint8_t units_sz) {
 	char distStr[32]; // distance measurements are only 16 bits
+	
+	// clear the previous distance measurement
+	LCD_ClearRow(3, 0);
+	LCD_SetY(3);
+	
+	// check if the distance is out of range
+	if (dist > 4500) {
+		LCD_PrintStringCentered("OUT OF RANGE", 12);
+		return;
+	}
+	
 	uint8_t sz = uintToStr(distStr, dist);
 	
 	// add the units to the string
 	for (int i = 0, j = sz; i < units_sz; i++, j++) {
 		distStr[j] = units[i];
 	}
-	
-	// clear the previous distance measurement
-	LCD_ClearRow(3, 0);
-	LCD_SetY(3);
 	
 	LCD_PrintStringCentered(distStr, sz+units_sz);
 }
