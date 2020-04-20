@@ -1,22 +1,28 @@
+/*
+ * File: motor.c
+ * Purpose: Defines all functions pertaining to the setup and controlling
+ *          of the vibrating motor disc. The vibration intensity is
+ *          controlled using PWM on a GPIOB pin and TIM3.
+ */
 #include "motor.h"
 
-MOTOR thisMotor;
+MOTOR *thisMotor;
 
 /*
  * Setup the PWM for the motor
  */
-void MOTOR_Setup(MOTOR motor) {
+void MOTOR_Setup(MOTOR *motor) {
   RCC->AHBENR |= RCC_AHBENR_GPIOBEN;  // Enable GPIOB clock
   RCC->APB1ENR |= RCC_APB1ENR_TIM3EN; // Enable TIM 3 clock
   
 	thisMotor = motor;
 	
   // Configure pins
-  configGPIOB_AF1(thisMotor.pin_number);
+  configGPIOB_AF1(thisMotor->pin_number);
   
   // Configure TIM3 to trigger UEV at 800 Hz, every 1250 us
-  TIM3->PSC = thisMotor.pwm_prescalar;  // 8MHz timer clock -> 125ns counter
-  TIM3->ARR = thisMotor.pwm_arr;  // Reset at 10000 for 1250 us
+  TIM3->PSC = thisMotor->pwm_prescalar;  // 8MHz timer clock -> 125ns counter
+  TIM3->ARR = thisMotor->pwm_arr;  // Reset at 10000 for 1250 us
   
   // Use PWM
   // Set CC1S to output
@@ -47,17 +53,17 @@ void MOTOR_Start() {
  */
 void MOTOR_SetDutyCycle(float prcnt) {
 	if (prcnt > 1) return;
-  TIM3->CCR1 = thisMotor.pwm_arr * prcnt;
+  TIM3->CCR1 = thisMotor->pwm_arr * prcnt;
 }
 
 /*
  * Set the vibration intensity by changing the duty cycle based on the thresholds
  */
 void MOTOR_SetVibrationIntensity(uint16_t distance) {
-  uint8_t motorSpeed = ((distance < thisMotor.thresholds[0]) << 3) |
-                       ((distance < thisMotor.thresholds[1]) << 2) |
-                       ((distance < thisMotor.thresholds[2]) << 1) |
-                       ((distance < thisMotor.thresholds[3]));
+  uint8_t motorSpeed = ((distance < thisMotor->thresholds[0]) << 3) |
+                       ((distance < thisMotor->thresholds[1]) << 2) |
+                       ((distance < thisMotor->thresholds[2]) << 1) |
+                       ((distance < thisMotor->thresholds[3]));
   
   switch (motorSpeed) {
     case 0xF:

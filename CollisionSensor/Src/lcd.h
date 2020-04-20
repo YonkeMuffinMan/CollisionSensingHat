@@ -1,3 +1,9 @@
+/*
+ * File: lcd.h
+ * Purpose: Declares all functions and stucts pertaining to the setup and
+ *          communication with the Nokia 5110 LCD Screen. All communication
+ *          is via SPI2 using GPIOB pins.
+ */
 #ifndef __LCD_H
 #define __LCD_H
 
@@ -12,9 +18,11 @@
 #define COMMAND_RESET_X 0x80
 #define COMMAND_RESET_Y 0x40
 
-// table that converts a char to LCD display, starting with Space
-// char - 0x20 will get the LCD data sequence
-// each is 5 columns x 8 rows on the LCD
+/*
+ * Table that converts a char to LCD display, starting with the Space (' ') character
+ * ascii_to_lcd[c - ' '] will get the LCD data sequence for character c
+ * each is 5 columns x 8 rows on the LCD
+ */
 static uint8_t ascii_to_lcd[][5] = {
 	{ 0x00, 0x00, 0x00, 0x00, 0x00 }, // 0x20 Space
 	{ 0x00, 0x00, 0xBE, 0x00, 0x00 }, // 0x21 !
@@ -121,7 +129,7 @@ typedef struct {						// Pin Numbers on LCD
 	uint8_t reset;						// Pin 4, RST - active low
 } LCD;
 
-void LCD_Setup(LCD screen);
+void LCD_Setup(LCD *screen);
 
 // Functions for sending bytes
 void LCD_SendByte(char c);

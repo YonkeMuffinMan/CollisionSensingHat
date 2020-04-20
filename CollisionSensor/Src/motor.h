@@ -1,8 +1,15 @@
+/*
+ * File: motor.h
+ * Purpose: Declares all functions and structs pertaining to the setup and
+ *          controlling of the vibrating motor disc. The vibration intensity
+ *          is controlled using PWM on a GPIOB pin and TIM3.
+ */
 #ifndef __MOTOR_H
 #define __MOTOR_H
 
 #include "stm32f0xx_hal.h"
 
+// PWM pin, prescalar, auto-reload value, and the four warning thresholds
 typedef struct motor {
   uint8_t pin_number;
   uint16_t pwm_prescalar;
@@ -11,7 +18,7 @@ typedef struct motor {
 } MOTOR;
 
 // Motor setup and startup functions
-void MOTOR_Setup(MOTOR motor);
+void MOTOR_Setup(MOTOR *motor);
 void MOTOR_Start(void);
 
 // Motor speen manipulation functions

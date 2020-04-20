@@ -1,18 +1,25 @@
+/*
+ * File: ultrasonicSensorUart.c
+ * Purpose: Defines all functions pertaining to the setup and communication
+ *          with the US-100 Ultrasonic Distance Sensor. All communication
+ *          is via USART3 using GPIOB pins.
+ */
 #include "ultrasonicSensorUart.h"
 
+// initialize the data recieved to 0
 volatile SENSOR_Values sensorValues = { 0, 0, 0 };
 
 /*
  * Setups the USART3 subsystem and GPIO pins
  */
-void SENSOR_Setup(SENSOR sensor) {
+void SENSOR_Setup(SENSOR *sensor) {
   RCC->APB1ENR |= RCC_APB1ENR_USART3EN; //Enable USART3 clock
   RCC->AHBENR |= RCC_AHBENR_GPIOBEN;  // Enable GPIOB clock
   
-  configPinB_AF4(sensor.uart_tx);
-  configPinB_AF4(sensor.uart_rx);
+  configPinB_AF4(sensor->uart_tx);
+  configPinB_AF4(sensor->uart_rx);
   
-  SENSOR_SetBaudRate(sensor.uart_baud_rate);
+  SENSOR_SetBaudRate(sensor->uart_baud_rate);
   // enable transmitter and reciever hardware
   USART3->CR1 |= USART_CR1_RE_Msk | USART_CR1_TE_Msk;
   // enable Recieved Register Not Empty interrupt
