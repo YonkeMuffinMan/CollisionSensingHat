@@ -65,10 +65,10 @@ void timerSetup(void);
 void setWarnings(void);
 void setLEDs(uint16_t distance);
 
-/**
-  * @brief  The application entry point.
-  * @retval int
-  */
+/*
+ * Setup the motr, sensor, LEDs, LCD screen, and the 100ms timer interrupt
+ * All processing is done through the timer interrrupt
+ */
 int main(void)
 {
   HAL_Init();
@@ -85,16 +85,16 @@ int main(void)
   
   // Set up motor on GPIOB and TIM3
   MOTOR motor = { MOTOR1_B, 0, 10000, {ORANGE_LED_THRESHOLD, BLUE_LED_THRESHOLD, GREEN_LED_THRESHOLD, NO_LED_THRESHOLD} }; // pin_number, pwm_prescalar, pwm_arr, thresholds (high to low)
-  MOTOR_Setup(motor);
+  MOTOR_Setup(&motor);
   MOTOR_Start();
   
 	// Set up UART Ultrasonic Distance sensor
   SENSOR sensor = { TX_B, RX_B, 9600 }; // uart_tx, uart_rx, uart_baud_rate
-  SENSOR_Setup(sensor);
+  SENSOR_Setup(&sensor);
 	
 	// Set up LCD screen
 	LCD screen = { SCK_B, MOSI_B, SCE_B, DC_B, RST_B };
-	LCD_Setup(screen);
+	LCD_Setup(&screen);
 	LCD_DistanceSetup();
 	
 	// setup and start the 100ms timer

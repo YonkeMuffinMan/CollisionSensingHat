@@ -1,3 +1,9 @@
+/*
+ * File: ultrasonicSensorUart.h
+ * Purpose: Declares all functions and structs pertaining to the setup and
+ *          communication with the US-100 Ultrasonic Distance Sensor. All
+ *          communication is via USART3 using GPIOB pins.
+ */
 #ifndef __ULTRASONIC_UART_H
 #define __ULTRASONIC_UART_H
 
@@ -17,9 +23,10 @@ typedef struct {
 	uint8_t new_value;
 } SENSOR_Values;
 
+// Define a volatile extern so SENSOR_GetReading can change the values and main can see them
 extern volatile SENSOR_Values sensorValues;
 
-void SENSOR_Setup(SENSOR sensor);
+void SENSOR_Setup(SENSOR *sensor);
 
 void SENSOR_SetBaudRate(uint32_t x);
 void SENSOR_GetReading(void);

@@ -1,28 +1,34 @@
+/*
+ * File: lcd.c
+ * Purpose: Defines all functions pertaining to the setup and communication
+ *          with the Nokia 5110 LCD Screen. All communication is via SPI2
+ *          using GPIOB pins.
+ */
 #include "lcd.h"
 
-LCD thisScreen;
+LCD *thisScreen;
 
 /*
  * Setups up the needed SPI2 and general IO pins and the SPI2 subsystem
  */
-void LCD_Setup(LCD screen) {
+void LCD_Setup(LCD *screen) {
   RCC->APB1ENR |= RCC_APB1ENR_SPI2EN; //Enable SPI2 clock
   RCC->AHBENR |= RCC_AHBENR_GPIOBEN;  // Enable GPIOB clock
   
 	thisScreen = screen;
 	
 	// configure SPI2 Pins
-  configPinB_AF0(thisScreen.data_in);
-	configPinB_AF0(thisScreen.sclk);
+  configPinB_AF0(thisScreen->data_in);
+	configPinB_AF0(thisScreen->sclk);
 	// configure general IO pins
-	configGPIOB_output(thisScreen.chip_select);
-	configGPIOB_output(thisScreen.mode_select);
-	configGPIOB_output(thisScreen.reset);
+	configGPIOB_output(thisScreen->chip_select);
+	configGPIOB_output(thisScreen->mode_select);
+	configGPIOB_output(thisScreen->reset);
 	
 	// send a reset pulse to reset LCD screen 
-	GPIOB->BRR = (1 << thisScreen.reset);
+	GPIOB->BRR = (1 << thisScreen->reset);
 	HAL_Delay(100);
-	GPIOB->BSRR = (1 << thisScreen.chip_select) | (1 << thisScreen.reset);
+	GPIOB->BSRR = (1 << thisScreen->chip_select) | (1 << thisScreen->reset);
   
 	// Configure SPI
 	SPI2->CR1 &= ~SPI_CR1_BR_Msk;
@@ -52,7 +58,7 @@ void LCD_SendByte(char c) {
 	while((SPI2->SR & SPI_SR_TXE_Msk) != SPI_SR_TXE_Msk);
 	
 	// set the chip select line low (its active low)
-	GPIOB->BRR = (1 << thisScreen.chip_select);
+	GPIOB->BRR = (1 << thisScreen->chip_select);
 	
 	*(uint8_t *)&(SPI2->DR) = c; // Make sure to do only an 8bit write, otherwise SPI assumes datapacking
 
@@ -60,7 +66,7 @@ void LCD_SendByte(char c) {
 	while((SPI2->SR & SPI_SR_BSY_Msk) == SPI_SR_BSY_Msk);
 	
 	// deslect the chip
-	GPIOB->BSRR = (1 << thisScreen.chip_select);
+	GPIOB->BSRR = (1 << thisScreen->chip_select);
 }
 
 /*
@@ -68,7 +74,7 @@ void LCD_SendByte(char c) {
  */
 void LCD_SendCommand(char c) {
 	// set the D/C line low to indicate a command is being set
-	GPIOB->BRR = (1 << thisScreen.mode_select);
+	GPIOB->BRR = (1 << thisScreen->mode_select);
 	
 	LCD_SendByte(c);
 }
@@ -78,54 +84,16 @@ void LCD_SendCommand(char c) {
  */
 void LCD_SendData(char c) {
 	// set the D/C line high to indicate a data byte is being set
-	GPIOB->BSRR = (1 << thisScreen.mode_select);
+	GPIOB->BSRR = (1 << thisScreen->mode_select);
 	
 	LCD_SendByte(c);
-}
-
-/*
- * Print a character on the screen
- */
-void LCD_PrintCharacter(char c) {
-	char index = c - ' '; // the array starts at the space character
-	
-	// if character is next to edge, add a blank column
-	if (ascii_to_lcd[index][0] != 0x00) {
-		LCD_SendData(0x00);
-	}
-	// send the 5 columns that make up the character
-	for (int i = 0; i < 5; i++) {
-		LCD_SendData(ascii_to_lcd[c-' '][i]);
-	}
-	// if character is next to edge, add a blank column
-	if (ascii_to_lcd[index][4] != 0x00) {
-		LCD_SendData(0x00);
-	}
-}
-
-/*
- * Print a string on the screen
- */
-void LCD_PrintString(char* str, int sz) {
-	// print each character of the string
-	for (int i = 0; i < sz; i++) {
-		LCD_PrintCharacter(str[i]);
-	}
-}
-
-/*
- * Print all the defined characters
- */
-void LCD_PrintAll() {
-	for (int i = ' '; i < (' ' + (sizeof(ascii_to_lcd)/sizeof(ascii_to_lcd[0]))); i++)
-		LCD_PrintCharacter(i);
 }
 
 /*
  * Send a sequence of startup commands
  */
 void LCD_Startup() {
-	LCD_SendCommand(COMMAND_EXTENDED_INSTRUCTION); // Lets LCD know extended commands coming
+	LCD_SendCommand(COMMAND_EXTENDED_INSTRUCTION); // Lets LCD know commands from extended instr set coming
 	LCD_SendCommand(0xbf); // Set the contrast
 	LCD_SendCommand(0x04); // Set the temperature coefficient
 	LCD_SendCommand(0x14); // Set the LCD Bias mode
@@ -210,10 +178,48 @@ void LCD_SetY(uint8_t y) {
 }
 
 /*
+ * Print a character on the screen
+ */
+void LCD_PrintCharacter(char c) {
+	char index = c - ' '; // the array starts at the space character
+	
+	// if character is next to edge, add a blank column
+	if (ascii_to_lcd[index][0] != 0x00) {
+		LCD_SendData(0x00);
+	}
+	// send the 5 columns that make up the character
+	for (int i = 0; i < 5; i++) {
+		LCD_SendData(ascii_to_lcd[c-' '][i]);
+	}
+	// if character is next to edge, add a blank column
+	if (ascii_to_lcd[index][4] != 0x00) {
+		LCD_SendData(0x00);
+	}
+}
+
+/*
+ * Print a string on the screen
+ */
+void LCD_PrintString(char* str, int sz) {
+	// print each character of the string
+	for (int i = 0; i < sz; i++) {
+		LCD_PrintCharacter(str[i]);
+	}
+}
+
+/*
+ * Print all the defined characters
+ */
+void LCD_PrintAll() {
+	for (int i = ' '; i < (' ' + (sizeof(ascii_to_lcd)/sizeof(ascii_to_lcd[0]))); i++)
+		LCD_PrintCharacter(i);
+}
+
+/*
  * center text in the row. the row must be set before calling this function
  */
 void LCD_PrintStringCentered(char* str, uint8_t sz) {
-	uint8_t numCol = sz*5; // each character takes about 5 columns
+	uint8_t numCol = sz*5; // each character takes up about 5 columns
 	
 	// empty columns are added before and after characters that use all 5 column, so take them into account
 	for (int i = 0; i < sz; i ++) {
@@ -227,7 +233,7 @@ void LCD_PrintStringCentered(char* str, uint8_t sz) {
 }
 
 /*
- * Display distance on the second row of the LCD screen, centered
+ * Display "DISTANCE:" on the second row of the LCD screen, centered
  */
 void LCD_DistanceSetup() {
 	LCD_ClearDisplay(); // clear display
@@ -239,18 +245,19 @@ void LCD_DistanceSetup() {
  * Print the distance measurement centered on the third row
  */
 void LCD_PrintMeasurement(uint16_t dist, char* units, uint8_t units_sz) {
-	char distStr[32]; // distance measurements are only 16 bits
+	char distStr[32]; // distance measurements are only 16 bits, so a little extra for units
 	
 	// clear the previous distance measurement
 	LCD_ClearRow(3, 0);
 	LCD_SetY(3);
 	
-	// check if the distance is out of range
+	// check if the distance is out of range of sensor, which is about 4500mm
 	if (dist > 4500) {
 		LCD_PrintStringCentered("OUT OF RANGE", 12);
 		return;
 	}
 	
+	// convert the measurment to a string
 	uint8_t sz = uintToStr(distStr, dist);
 	
 	// add the units to the string

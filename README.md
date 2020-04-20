@@ -13,6 +13,10 @@ The Collision Sensor utilizes an ultrasonic distance sensor to measure the dista
 - Transistor: [PN2222](https://www.digikey.com/product-detail/en/on-semiconductor/PN2222ATA/PN2222ATACT-ND/3042489)
 - Diode: [1N4001](https://www.digikey.com/product-detail/en/comchip-technology/1N4001-G/641-1310-1-ND/1979675)
 
+## Software List
+
+- Software Development Kit: [Keil µVision 5](https://www2.keil.com/mdk5)
+
 ## Functionality
 
 ### Overview
@@ -54,7 +58,7 @@ The US-100 Ultrasonic Distance Sensor and the Nokia 5110 LCD screen should be co
 
 An optional potentiometer can be inserted between the 3V line and the Nokia 5110 LCD screen's LED pin to control the backlight level.
 
-A transistor is utilized to control the vibration motor with the a lower current from the PWM pin PB4. A diode is placed in between the transistor and motor in order to prevent back voltage.
+A transistor is utilized to control the vibration motor with a lower current from the PWM pin PB4. A diode is placed in between the transistor and motor in order to prevent back voltage.
 
 ### US-100 Ultrasonic Distance Sensor Pin Connections
 
@@ -93,10 +97,14 @@ Connections from the Nokia 5110 to the STM32f072 and the pin's mode if applicabl
 
 Connections from the STM32f072 to the internal LEDs:
 
-- PC6 (General Purpose Output) = Red LED
-- PC7 (General Purpose Output) = Blue LED
-- PC8 (General Purpose Output) = Orange LED
-- PC9 (General Purpose Output) = Green LED
+- PC6 (General Purpose Output) <-> Red LED
+- PC7 (General Purpose Output) <-> Blue LED
+- PC8 (General Purpose Output) <-> Orange LED
+- PC9 (General Purpose Output) <-> Green LED
+
+### Programming the STM32f072
+
+After making all the connections between the STM32f072 and the external parts, the next thing to do is program the MCU. First, download the code archive into a known place an unzip it. Second, download and install [Keil µVision 5](https://www2.keil.com/mdk5) which makes programing the board very simple. Once installed, open it and select the menu item Project->Open Project... This will open a file explorer window. Navigate to where you downloaded the code archive to and go to the folder [CollisionSensor/MDK-ARM](CollisionSensor/MDK-ARM) and select the Keil µVision 5 project file called [CollisionSensor.uvprojx](CollisionSensor/MDK-ARM/CollisionSensor.uvprojx). This will open the Collision Sensor project. Next, you want to build the project by selecting Project->Rebuild all target files. As long as the build produced zero errors, the project is ready to be loaded onto the STM32f072. Plug the board into your computer then select Flash->Download. If this succeeded, your board now has the project loaded on it and all you have to do is press the RESET button on the board. This will start the Collision Sensor Program.
 
 ## Software Flow and Organization
 
