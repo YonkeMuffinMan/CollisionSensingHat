@@ -118,6 +118,6 @@ The general flow of the software is described by the functional block diagram:
 The software is organized into 7 files located in ./CollisionSensor/Src:
 
 - [main.c](CollisionSensor/Src/main.c) contains the pin definitions, warning threshold definitions, initialization, TIM2 (100 ms timer) interrupt handler, warning setter, and LED controller.
-- [ultrasonicSensorUart.c](CollisionSensor/Src/ultrasonicSensorUart.c) and [ultrasonicSensorUart.h](CollisionSensor/Src/ultrasonicSensorUart.h) contain all functions pertaining to communication with the US-100 Ultrasonic Distance Sensor via UART3.
-- [motor.c](CollisionSensor/Src/motor.c) and [motor.h](CollisionSensor/Src/motor.h) contain all functions pertaining to manipulation of the motor controller.
+- [ultrasonicSensorUart.c](CollisionSensor/Src/ultrasonicSensorUart.c) and [ultrasonicSensorUart.h](CollisionSensor/Src/ultrasonicSensorUart.h) contain all functions pertaining to communication with the US-100 Ultrasonic Distance Sensor via UART.
+- [motor.c](CollisionSensor/Src/motor.c) and [motor.h](CollisionSensor/Src/motor.h) contain all functions pertaining to manipulation of the motor controller. The motor vibration is controlled using PWM.
 - [lcd.c](CollisionSensor/Src/lcd.c) and [lcd.h](CollisionSensor/Src/lcd.h) contain all functions pertaining to communicating with the Nokia 5110 LCD screen via SPI.
