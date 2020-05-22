@@ -159,8 +159,8 @@ void setWarnings() {
   while (sensorValues.new_value == 0);
   uint16_t distance = sensorValues.distance; // in millimeters  
   setLEDs(distance);
-  //MOTOR_SetVibrationIntensity(distance);
-	LCD_PrintMeasurement(distance, "mm", 2);
+  MOTOR_SetVibrationIntensity(distance);
+  LCD_PrintMeasurement(distance, "mm", 2);
 }
 
 /*
