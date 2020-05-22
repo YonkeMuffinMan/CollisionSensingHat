@@ -7,7 +7,8 @@
 #include "ultrasonicSensorUart.h"
 
 // initialize the data recieved to 0
-volatile SENSOR_Values sensorValues = { 0, 0, 0 };
+volatile SENSOR_Values sensorValues = { 0, 0, 0, 0, 0 };
+volatile uint8_t rangeMeasurement = 1;
 
 /*
  * Setups the USART3 subsystem and GPIO pins
@@ -48,8 +49,21 @@ void SENSOR_GetReading() {
   // wait until transmit data register is empty. bit 7 will be set when empty
   while ((USART3->ISR & (1 << 7)) == 0) {}
   
+	rangeMeasurement = 1;
   // Transmit data register is now empty, write new char to send
   USART3->TDR = 0x55;
+}
+
+/*
+ * Send a request for a temperature reading to the sensor
+ */
+void SENSOR_GetTempReading(void) {
+	// wait until transmit data register is empty. bit 7 will be set when empty
+  while ((USART3->ISR & (1 << 7)) == 0) {}
+  
+	rangeMeasurement = 0;
+  // Transmit data register is now empty, write new char to send
+  USART3->TDR = 0x50;
 }
 
 /*
@@ -59,6 +73,15 @@ void SENSOR_GetReading() {
 void USART3_4_IRQHandler(void) {
 	// wait for distance data to be received
   if (((USART3->ISR & USART_ISR_RXNE_Msk) >> USART_ISR_RXNE_Pos) != 1) return;
+	
+	if (rangeMeasurement) SENSOR_RecvDistance();
+	else SENSOR_RecvTemperature();
+}
+
+/*
+ * Get the 16 bit distance value
+ */
+void SENSOR_RecvDistance() {
 	// if two values have already been recieved, reset everything
   if (sensorValues.recieved == 2) {
     sensorValues.recieved = 0; 
@@ -76,6 +99,21 @@ void USART3_4_IRQHandler(void) {
   
 	// if two 8 bit values were received, the 16 bit number is ready
   if (sensorValues.recieved == 2) sensorValues.new_value = 1;
+}
+
+/*
+ * Get the 8 bit temperature value
+ */
+void SENSOR_RecvTemperature() {
+	if (sensorValues.temp_recieved == 1) {
+    sensorValues.temp_recieved = 0; 
+    sensorValues.temperature = 0;
+    sensorValues.new_temp_value = 0;
+  }
+	
+	sensorValues.temperature = USART3->RDR;
+	sensorValues.temp_recieved++;
+	sensorValues.new_temp_value = 1;
 }
 
 /*

@@ -157,6 +157,7 @@ void LCD_PrintStringCentered(char* str, uint8_t sz);
 // printing measurements to the screen
 void LCD_DistanceSetup(void);
 void LCD_PrintMeasurement(uint16_t dist, char* units, uint8_t units_sz);
+void LCD_PrintTempMeasurement(uint16_t temp, char* units, uint8_t units_sz, uint16_t temp2, char* units2, uint8_t units_sz2);
 uint8_t uintToStr(char* buf, uint16_t dist);
 
 // Pin configuration

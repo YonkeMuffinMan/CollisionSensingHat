@@ -19,8 +19,11 @@ typedef struct {
 // Holds the data recieved information
 typedef struct {
 	uint8_t recieved;
+	uint8_t temp_recieved;
 	uint16_t distance;
+	uint8_t temperature;
 	uint8_t new_value;
+	uint8_t new_temp_value;
 } SENSOR_Values;
 
 // Define a volatile extern so SENSOR_GetReading can change the values and main can see them
@@ -30,6 +33,10 @@ void SENSOR_Setup(SENSOR *sensor);
 
 void SENSOR_SetBaudRate(uint32_t x);
 void SENSOR_GetReading(void);
+void SENSOR_GetTempReading(void);
+
+void SENSOR_RecvDistance(void);
+void SENSOR_RecvTemperature(void);
 
 void configPinB_AF4(uint8_t x);
 
