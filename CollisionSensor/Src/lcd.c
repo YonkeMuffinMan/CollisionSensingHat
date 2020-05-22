@@ -237,19 +237,21 @@ void LCD_PrintStringCentered(char* str, uint8_t sz) {
  */
 void LCD_DistanceSetup() {
 	LCD_ClearDisplay(); // clear display
-	LCD_SetY(2);
+	LCD_SetY(1);
 	LCD_PrintStringCentered("DISTANCE:", 9);
+	LCD_SetY(3);
+	LCD_PrintStringCentered("TEMPERATURE:", 12);
 }
 
 /*
- * Print the distance measurement centered on the third row
+ * Print the distance measurement centered on the second row
  */
 void LCD_PrintMeasurement(uint16_t dist, char* units, uint8_t units_sz) {
 	char distStr[32]; // distance measurements are only 16 bits, so a little extra for units
 	
 	// clear the previous distance measurement
-	LCD_ClearRow(3, 0);
-	LCD_SetY(3);
+	LCD_ClearRow(2, 0);
+	LCD_SetY(2);
 	
 	// check if the distance is out of range of sensor, which is about 4500mm
 	if (dist > 4500) {
@@ -266,6 +268,47 @@ void LCD_PrintMeasurement(uint16_t dist, char* units, uint8_t units_sz) {
 	}
 	
 	LCD_PrintStringCentered(distStr, sz+units_sz);
+}
+
+/*
+ * Print the temperature measurement centered on the fourth row
+ */
+void LCD_PrintTempMeasurement(uint16_t temp, char* units, uint8_t units_sz, uint16_t temp2, char* units2, uint8_t units_sz2) {
+	char tempStr[32], tempStr2[32]; // temp measurements are only 8 bits, so a little extra for units
+	
+	// clear the previous distance measurement
+	LCD_ClearRow(4, 0);
+	LCD_SetY(4);
+	
+	// check if the distance is out of range of sensor, which is about 4500mm
+	if (temp > 158 || temp < 0 || temp > 158 || temp < 0) {
+		LCD_PrintStringCentered("OUT OF RANGE", 12);
+		return;
+	}
+	
+	// convert the measurment to a string
+	uint16_t sz = uintToStr(tempStr, temp);
+	uint16_t sz2 = uintToStr(tempStr2, temp2);
+	
+	// add the units to the string
+	for (int i = 0, j = sz; i < units_sz; i++, j++) {
+		tempStr[j] = units[i];
+	}
+	// add the units to the string
+	for (int i = 0, j = sz2; i < units_sz2; i++, j++) {
+		tempStr2[j] = units2[i];
+	}
+	
+	char fullTempStr[64] = "";
+	int i = 0;
+	for (; i < sz+units_sz; i++) {
+		fullTempStr[i] = tempStr[i];
+	}
+	fullTempStr[i++] = ' ';
+	for (int j = 0; j < sz2+units_sz2; j++, i++) {
+		fullTempStr[i] = tempStr2[j];
+	}
+	LCD_PrintStringCentered(fullTempStr, i);
 }
 
 /*

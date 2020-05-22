@@ -64,6 +64,7 @@ void timerSetup(void);
 
 void setWarnings(void);
 void setLEDs(uint16_t distance);
+void displayTemperature(void);
 
 /*
  * Setup the motr, sensor, LEDs, LCD screen, and the 100ms timer interrupt
@@ -134,8 +135,21 @@ void timerSetup() {
 void TIM2_IRQHandler(void) {
 	SENSOR_GetReading();
 	setWarnings();
+	HAL_Delay(10);
+	SENSOR_GetTempReading();
+	displayTemperature();
 	
 	TIM2->SR &= ~(1);	// clear update interrupt flag
+}
+
+/*
+ * Wait for new temperature value, then display it
+ */
+void displayTemperature() {
+  while (sensorValues.new_temp_value == 0);
+	uint8_t temp = sensorValues.temperature - 45;
+	uint16_t far = ((temp * 9)/5) + 32;
+	LCD_PrintTempMeasurement(far, "F", 1, temp, "C", 1);
 }
 
 /*
@@ -143,10 +157,9 @@ void TIM2_IRQHandler(void) {
  */
 void setWarnings() {
   while (sensorValues.new_value == 0);
-  
   uint16_t distance = sensorValues.distance; // in millimeters  
   setLEDs(distance);
-  MOTOR_SetVibrationIntensity(distance);
+  //MOTOR_SetVibrationIntensity(distance);
 	LCD_PrintMeasurement(distance, "mm", 2);
 }
 
