@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Collision Sensor utilizes an ultrasonic distance sensor to measure the distance to objects in its path and warn the user when objects are getting close. The warnings come in the form of LED lights that indicate how close the object is, a vibration motor that increases motor vibration intensity as objects get closer, and an LCD screen that prints the measured distance.
+The Collision Sensor utilizes an ultrasonic distance sensor to measure the distance to objects in its path and warn the user when objects are getting close. The warnings come in the form of LED lights that indicate how close the object is, a vibration motor that increases motor vibration intensity as objects get closer, and an LCD screen that prints the measured distance. The temperature is also printed on the LCD display in both Fahrenheit and Celsius.
 
 ## Parts List
 
@@ -26,6 +26,8 @@ The collision sensor utilizes a hybrid between polling and interrupt driven soft
 1. The LEDs are turned off and on according to the thresholds described below.
 2. The motor vibration intensity is set using pulse width modulation according to the thresholds described below.
 3. The distance is printed on the LCD screen according to the process described below.
+
+Once the distance warnings are set and the measurement is printed, a temperature measurement is requested from the US-100 which is printed to the LCD screen underneath the distance measurement.
 
 ### Thresholds
 
@@ -110,6 +112,7 @@ After making all the connections between the STM32f072 and the external parts, t
 
 ### Software Flow Block Diagram
 
+*Note: Diagram does not include the Temperature measurement portion yet.*
 The general flow of the software is described by the functional block diagram:
 ![Software Block Diagram](sw_block_diagram.png)
 
