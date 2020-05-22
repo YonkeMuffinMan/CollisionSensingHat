@@ -113,6 +113,7 @@ After making all the connections between the STM32f072 and the external parts, t
 ### Software Flow Block Diagram
 
 *Note: Diagram does not include the Temperature measurement portion yet.*
+
 The general flow of the software is described by the functional block diagram:
 ![Software Block Diagram](sw_block_diagram.png)
 
